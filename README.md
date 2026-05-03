@@ -1,7 +1,7 @@
 # IVCU-MADRID
 Índice de Vulnerabilidad Climática Urbana por barrios de Madrid
 # IVCU Madrid 🌡️
-## Índice de Vulnerabilidad Climática Urbana por barrios — Madrid 2024
+## Índice de Vulnerabilidad Climática Urbana por barrios — Madrid
 
 [![Datos abiertos](https://img.shields.io/badge/Datos-datos.madrid.es-blue)](https://datos.madrid.es)
 [![Python](https://img.shields.io/badge/Python-3.12-green)](https://www.python.org/)
