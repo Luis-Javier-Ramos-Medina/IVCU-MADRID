@@ -565,10 +565,11 @@ def procesar_barrios_shapefile():
 
 def procesar_vulnerabilidad_referencia():
     """
-    FIX v4: join más robusto en tres pasos:
-      1. Por código numérico extraído del campo BARRIO
-      2. Por nombre normalizado (sin tildes, minúsculas)
-      3. Por código distrito + número de barrio dentro del distrito (fallback)
+    FIX v6: el campo BARRIO del dataset oficial tiene espacios iniciales
+    (p.ej. "   022. Las Acacias") que impedían extraer el código numérico.
+    Solución: strip() antes de extraer código y nombre.
+    También se normaliza el nombre eliminando artículos iniciales (Las, Los,
+    La, El, Del) para maximizar el match con los nombres del shapefile.
     """
     print('\n  2b. Vulnerabilidad oficial (referencia)...')
     df = pd.read_csv('data/raw/vulnerabilidad.csv', encoding='latin-1', sep=';')
@@ -578,15 +579,26 @@ def procesar_vulnerabilidad_referencia():
         df['Vulnerabilidad'].astype(str).str.replace(',', '.', regex=False), errors='coerce'
     )
 
-    # Intentar extraer código numérico del campo BARRIO (p.ej. "1. Palacio" → 1)
-    # El dataset usa el código conjunto distrito+barrio (ej: 101, 102 … 2101)
+    # FIX v6: strip() para eliminar espacios iniciales antes de extraer código
+    df['BARRIO_strip'] = df['BARRIO'].astype(str).str.strip()
+
+    # Extraer código numérico (p.ej. "022. Las Acacias" → 22)
     df['cod_barrio_num'] = pd.to_numeric(
-        df['BARRIO'].astype(str).str.extract(r'^(\d+)\.').squeeze(), errors='coerce'
+        df['BARRIO_strip'].str.extract(r'^(\d+)\.').squeeze(), errors='coerce'
     ).astype('Int64')
 
-    df['nombre_barrio_norm'] = df['BARRIO'].astype(str).apply(
-        lambda x: normalizar_nombre(x.split('.', 1)[-1] if '.' in x else x)
-    )
+    # Nombre normalizado: eliminar el código inicial y artículos (Las, Los, La, El, Del)
+    def extraer_nombre(barrio_str):
+        nombre = barrio_str.split('.', 1)[-1] if '.' in barrio_str else barrio_str
+        nombre = normalizar_nombre(nombre)
+        # Eliminar artículos iniciales para mejorar el match
+        for art in ('las ', 'los ', 'la ', 'el ', 'del ', 'de '):
+            if nombre.startswith(art):
+                nombre = nombre[len(art):]
+                break
+        return nombre.strip()
+
+    df['nombre_barrio_norm'] = df['BARRIO_strip'].apply(extraer_nombre)
 
     resultado = df[['cod_barrio_num', 'nombre_barrio_norm', 'Ranking', 'Vulnerabilidad']].copy()
     resultado.columns = ['cod_barrio_vuln', 'nombre_barrio_norm', 'ranking_ref', 'ivcu_ref']
