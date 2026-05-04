@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PCA Clustering IVCU Madrid</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f8f9fa;margin:0;padding:16px;}
+  h2{font-size:16px;color:#1a1a2e;margin-bottom:4px;}
+  p.sub{font-size:11px;color:#6b7280;margin:0 0 12px;}
+  #canvas-wrap{position:relative;background:#fff;border:1px solid #e5e7eb;
+               border-radius:10px;overflow:hidden;}
+  canvas{display:block;}
+  #tooltip{position:absolute;background:#1a1a2e;color:#fff;padding:8px 12px;
+            border-radius:8px;font-size:11px;pointer-events:none;display:none;
+            white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2);}
+  .leyenda{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .ley-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#374151;}
+  .ley-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+<h2>Perfiles de vulnerabilidad climática — PCA K-Means</h2>
+<p class="sub">Cada punto es un barrio de Madrid. PC1 (33.3% varianza) · PC2 (26.0% varianza)</p>
+<div id="canvas-wrap">
+  <canvas id="c" width="700" height="440"></canvas>
+  <div id="tooltip"></div>
+</div>
+<div class="leyenda" id="leyenda"></div>
+<script>
+const DATA    = [{x:2.703,y:1.426,color:"#e74c3c",label:"Opañel",perfil:"Alta privación económica y contaminación",ivcu:7.147},{x:1.102,y:0.408,color:"#e74c3c",label:"Embajadores",perfil:"Alta privación económica y contaminación",ivcu:7.018},{x:2.083,y:0.994,color:"#e74c3c",label:"Moscardó",perfil:"Alta privación económica y contaminación",ivcu:6.997},{x:1.094,y:0.773,color:"#e74c3c",label:"Vista Alegre",perfil:"Alta privación económica y contaminación",ivcu:6.993},{x:-1.214,y:1.462,color:"#2980b9",label:"Pacífico",perfil:"Envejecimiento y déficit de verde",ivcu:6.992},{x:-0.110,y:0.422,color:"#2980b9",label:"Aluche",perfil:"Envejecimiento y déficit de verde",ivcu:6.978},{x:1.866,y:1.213,color:"#e74c3c",label:"San Diego",perfil:"Alta privación económica y contaminación",ivcu:6.974},{x:-0.443,y:1.469,color:"#2980b9",label:"Acacias",perfil:"Envejecimiento y déficit de verde",ivcu:6.850},{x:-0.151,y:1.729,color:"#2980b9",label:"Gaztambide",perfil:"Envejecimiento y déficit de verde",ivcu:6.815},{x:2.612,y:0.370,color:"#e74c3c",label:"Abrantes",perfil:"Alta privación económica y contaminación",ivcu:6.795},{x:0.418,y:0.627,color:"#2980b9",label:"Bellas Vistas",perfil:"Envejecimiento y déficit de verde",ivcu:6.791},{x:3.285,y:0.806,color:"#e74c3c",label:"Zofío",perfil:"Alta privación económica y contaminación",ivcu:6.761},{x:1.872,y:2.441,color:"#e74c3c",label:"Comillas",perfil:"Alta privación económica y contaminación",ivcu:6.754},{x:-0.242,y:1.460,color:"#2980b9",label:"Arapiles",perfil:"Envejecimiento y déficit de verde",ivcu:6.727},{x:0.950,y:0.340,color:"#e74c3c",label:"Numancia",perfil:"Alta privación económica y contaminación",ivcu:6.725},{x:0.042,y:1.802,color:"#2980b9",label:"Pilar",perfil:"Envejecimiento y déficit de verde",ivcu:6.718},{x:0.679,y:0.581,color:"#e74c3c",label:"Berruguete",perfil:"Alta privación económica y contaminación",ivcu:6.678},{x:0.391,y:0.103,color:"#2980b9",label:"Pueblo Nuevo",perfil:"Envejecimiento y déficit de verde",ivcu:6.648},{x:0.191,y:1.703,color:"#2980b9",label:"Chopera",perfil:"Envejecimiento y déficit de verde",ivcu:6.642},{x:1.248,y:0.378,color:"#e74c3c",label:"Universidad",perfil:"Alta privación económica y contaminación",ivcu:6.638},{x:0.753,y:0.561,color:"#e74c3c",label:"Puerta del Ángel",perfil:"Alta privación económica y contaminación",ivcu:6.626},{x:-0.116,y:-0.097,color:"#2980b9",label:"Águilas",perfil:"Envejecimiento y déficit de verde",ivcu:6.625},{x:1.765,y:0.156,color:"#e74c3c",label:"Puerta Bonita",perfil:"Alta privación económica y contaminación",ivcu:6.611},{x:-0.374,y:1.304,color:"#2980b9",label:"Trafalgar",perfil:"Envejecimiento y déficit de verde",ivcu:6.609},{x:1.059,y:0.141,color:"#e74c3c",label:"San Isidro",perfil:"Alta privación económica y contaminación",ivcu:6.588},{x:2.588,y:-0.034,color:"#e74c3c",label:"Pradolongo",perfil:"Alta privación económica y contaminación",ivcu:6.569},{x:-0.933,y:1.706,color:"#2980b9",label:"Ibiza",perfil:"Envejecimiento y déficit de verde",ivcu:6.569},{x:1.747,y:0.790,color:"#e74c3c",label:"Almendrales",perfil:"Alta privación económica y contaminación",ivcu:6.538},{x:0.073,y:0.257,color:"#2980b9",label:"Santa Eugenia",perfil:"Envejecimiento y déficit de verde",ivcu:6.508},{x:0.943,y:0.327,color:"#e74c3c",label:"Palomeras Bajas",perfil:"Alta privación económica y contaminación",ivcu:6.503},{x:-0.688,y:1.258,color:"#2980b9",label:"Prosperidad",perfil:"Envejecimiento y déficit de verde",ivcu:6.495},{x:1.720,y:-0.004,color:"#e74c3c",label:"Orcasitas",perfil:"Alta privación económica y contaminación",ivcu:6.492},{x:-0.331,y:1.466,color:"#2980b9",label:"Palos de la Frontera",perfil:"Envejecimiento y déficit de verde",ivcu:6.460},{x:1.349,y:0.060,color:"#e74c3c",label:"Los Rosales",perfil:"Alta privación económica y contaminación",ivcu:6.453},{x:1.136,y:-0.160,color:"#e74c3c",label:"Ángeles",perfil:"Alta privación económica y contaminación",ivcu:6.381},{x:-0.641,y:0.611,color:"#2980b9",label:"Media Legua",perfil:"Envejecimiento y déficit de verde",ivcu:6.378},{x:0.669,y:1.585,color:"#e74c3c",label:"Quintana",perfil:"Alta privación económica y contaminación",ivcu:6.345},{x:0.084,y:0.057,color:"#2980b9",label:"Lucero",perfil:"Envejecimiento y déficit de verde",ivcu:6.327},{x:-0.889,y:0.905,color:"#2980b9",label:"Adelfas",perfil:"Envejecimiento y déficit de verde",ivcu:6.301},{x:1.085,y:0.441,color:"#e74c3c",label:"Portazgo",perfil:"Alta privación económica y contaminación",ivcu:6.293},{x:-1.787,y:0.852,color:"#2980b9",label:"Estrella",perfil:"Envejecimiento y déficit de verde",ivcu:6.290},{x:-0.908,y:1.339,color:"#2980b9",label:"Goya",perfil:"Envejecimiento y déficit de verde",ivcu:6.277},{x:0.048,y:0.806,color:"#2980b9",label:"Imperial",perfil:"Envejecimiento y déficit de verde",ivcu:6.266},{x:-0.215,y:1.090,color:"#2980b9",label:"Vinateros",perfil:"Envejecimiento y déficit de verde",ivcu:6.252},{x:0.095,y:-0.480,color:"#27ae60",label:"Ventas",perfil:"Renta baja y escasez de verde",ivcu:6.248},{x:0.861,y:-1.114,color:"#27ae60",label:"Entrevías",perfil:"Renta baja y escasez de verde",ivcu:6.243},{x:1.333,y:-0.485,color:"#e74c3c",label:"San Fermín",perfil:"Alta privación económica y contaminación",ivcu:6.207},{x:2.563,y:0.235,color:"#e74c3c",label:"Casco Histórico de Barajas",perfil:"Alta privación económica y contaminación",ivcu:6.205},{x:-1.206,y:0.123,color:"#e67e22",label:"Marroquina",perfil:"Vulnerabilidad contenida",ivcu:6.196},{x:-0.832,y:0.259,color:"#2980b9",label:"Cuatro Caminos",perfil:"Envejecimiento y déficit de verde",ivcu:6.159},{x:0.314,y:0.179,color:"#2980b9",label:"Canillejas",perfil:"Envejecimiento y déficit de verde",ivcu:6.141},{x:0.453,y:-0.195,color:"#e74c3c",label:"Palacio",perfil:"Alta privación económica y contaminación",ivcu:6.138},{x:-0.809,y:0.276,color:"#2980b9",label:"Guindalera",perfil:"Envejecimiento y déficit de verde",ivcu:6.128},{x:0.760,y:-1.457,color:"#27ae60",label:"Casco Histórico de Vicálvaro",perfil:"Renta baja y escasez de verde",ivcu:6.083},{x:1.614,y:-0.629,color:"#e74c3c",label:"Orcasur",perfil:"Alta privación económica y contaminación",ivcu:6.071},{x:-0.890,y:1.715,color:"#2980b9",label:"Lista",perfil:"Envejecimiento y déficit de verde",ivcu:6.067},{x:0.091,y:-0.448,color:"#27ae60",label:"Almenara",perfil:"Renta baja y escasez de verde",ivcu:6.059},{x:-0.740,y:0.599,color:"#2980b9",label:"Fuente del Berro",perfil:"Envejecimiento y déficit de verde",ivcu:6.050},{x:0.163,y:-0.127,color:"#2980b9",label:"Fontarrón",perfil:"Envejecimiento y déficit de verde",ivcu:6.029},{x:0.826,y:-0.093,color:"#e74c3c",label:"Los Cármenes",perfil:"Alta privación económica y contaminación",ivcu:6.019},{x:0.283,y:1.899,color:"#2980b9",label:"Argüelles",perfil:"Envejecimiento y déficit de verde",ivcu:6.018},{x:2.233,y:-1.762,color:"#27ae60",label:"Aeropuerto",perfil:"Renta baja y escasez de verde",ivcu:6.011},{x:0.637,y:-0.796,color:"#27ae60",label:"Valdeacederas",perfil:"Renta baja y escasez de verde",ivcu:5.987},{x:-0.354,y:0.153,color:"#2980b9",label:"Valdezarza",perfil:"Envejecimiento y déficit de verde",ivcu:5.972},{x:1.045,y:-1.690,color:"#27ae60",label:"Casco Histórico de Vallecas",perfil:"Renta baja y escasez de verde",ivcu:5.971},{x:0.002,y:-1.188,color:"#27ae60",label:"Campamento",perfil:"Renta baja y escasez de verde",ivcu:5.970},{x:0.632,y:-0.865,color:"#27ae60",label:"Palomeras Sureste",perfil:"Renta baja y escasez de verde",ivcu:5.946},{x:-2.361,y:1.142,color:"#e67e22",label:"La Paz",perfil:"Vulnerabilidad contenida",ivcu:5.939},{x:0.013,y:0.976,color:"#2980b9",label:"La Concepción",perfil:"Envejecimiento y déficit de verde",ivcu:5.934},{x:-0.277,y:1.018,color:"#2980b9",label:"Ciudad Jardín",perfil:"Envejecimiento y déficit de verde",ivcu:5.923},{x:-0.194,y:-0.252,color:"#e67e22",label:"Alameda de Osuna",perfil:"Vulnerabilidad contenida",ivcu:5.917},{x:-1.086,y:0.567,color:"#2980b9",label:"Castillejos",perfil:"Envejecimiento y déficit de verde",ivcu:5.883},{x:-0.618,y:-0.147,color:"#e67e22",label:"Pinar del Rey",perfil:"Vulnerabilidad contenida",ivcu:5.882},{x:1.348,y:-1.303,color:"#27ae60",label:"Buenavista",perfil:"Renta baja y escasez de verde",ivcu:5.878},{x:-1.526,y:0.431,color:"#2980b9",label:"Ríos Rosas",perfil:"Envejecimiento y déficit de verde",ivcu:5.866},{x:-0.996,y:0.216,color:"#2980b9",label:"Delicias",perfil:"Envejecimiento y déficit de verde",ivcu:5.835},{x:2.436,y:-0.648,color:"#e74c3c",label:"San Cristóbal",perfil:"Alta privación económica y contaminación",ivcu:5.791},{x:0.837,y:-0.081,color:"#e74c3c",label:"Arcos",perfil:"Alta privación económica y contaminación",ivcu:5.749},{x:-0.731,y:0.757,color:"#2980b9",label:"San Pascual",perfil:"Envejecimiento y déficit de verde",ivcu:5.728},{x:-0.926,y:0.022,color:"#e67e22",label:"Canillas",perfil:"Vulnerabilidad contenida",ivcu:5.723},{x:0.672,y:0.024,color:"#e74c3c",label:"Sol",perfil:"Alta privación económica y contaminación",ivcu:5.718},{x:1.806,y:-1.920,color:"#27ae60",label:"Villaverde Alto - Casco Histórico de Villaverde",perfil:"Renta baja y escasez de verde",ivcu:5.715},{x:0.699,y:-0.790,color:"#27ae60",label:"Simancas",perfil:"Renta baja y escasez de verde",ivcu:5.672},{x:-1.736,y:0.300,color:"#e67e22",label:"Vallehermoso",perfil:"Vulnerabilidad contenida",ivcu:5.662},{x:-2.058,y:0.884,color:"#e67e22",label:"Niño Jesús",perfil:"Vulnerabilidad contenida",ivcu:5.650},{x:-0.195,y:-0.006,color:"#2980b9",label:"Justicia",perfil:"Envejecimiento y déficit de verde",ivcu:5.622},{x:-2.007,y:0.553,color:"#e67e22",label:"Almagro",perfil:"Vulnerabilidad contenida",ivcu:5.619},{x:-0.120,y:-0.063,color:"#2980b9",label:"Cortes",perfil:"Envejecimiento y déficit de verde",ivcu:5.606},{x:-1.077,y:0.230,color:"#e67e22",label:"Hispanoamérica",perfil:"Vulnerabilidad contenida",ivcu:5.494},{x:-1.175,y:-0.145,color:"#e67e22",label:"Peñagrande",perfil:"Vulnerabilidad contenida",ivcu:5.491},{x:0.164,y:-1.354,color:"#27ae60",label:"Rosas",perfil:"Renta baja y escasez de verde",ivcu:5.461},{x:0.273,y:-1.166,color:"#27ae60",label:"Valdebernardo",perfil:"Renta baja y escasez de verde",ivcu:5.459},{x:1.753,y:-1.855,color:"#27ae60",label:"Ensanche de Vallecas",perfil:"Renta baja y escasez de verde",ivcu:5.417},{x:1.496,y:-2.025,color:"#27ae60",label:"Butarque",perfil:"Renta baja y escasez de verde",ivcu:5.404},{x:-0.556,y:-0.622,color:"#e67e22",label:"Pavones",perfil:"Vulnerabilidad contenida",ivcu:5.354},{x:1.415,y:-1.575,color:"#27ae60",label:"Rejas",perfil:"Renta baja y escasez de verde",ivcu:5.291},{x:1.151,y:1.478,color:"#8e44ad",label:"Hellín",perfil:"Verde abundante (parques y zonas forestales)",ivcu:5.248},{x:-1.815,y:-1.679,color:"#e67e22",label:"El Pardo",perfil:"Vulnerabilidad contenida",ivcu:5.244},{x:-1.035,y:-0.041,color:"#e67e22",label:"El Salvador",perfil:"Vulnerabilidad contenida",ivcu:5.244},{x:-1.584,y:0.639,color:"#e67e22",label:"Recoletos",perfil:"Vulnerabilidad contenida",ivcu:5.191},{x:-1.917,y:0.624,color:"#e67e22",label:"Castellana",perfil:"Vulnerabilidad contenida",ivcu:5.128},{x:1.542,y:0.079,color:"#e74c3c",label:"Valderrivas",perfil:"Alta privación económica y contaminación",ivcu:5.092},{x:-0.598,y:-0.736,color:"#27ae60",label:"Legazpi",perfil:"Renta baja y escasez de verde",ivcu:5.082},{x:-2.442,y:-1.347,color:"#e67e22",label:"Casa de Campo",perfil:"Vulnerabilidad contenida",ivcu:5.063},{x:0.388,y:-1.966,color:"#27ae60",label:"Timón",perfil:"Renta baja y escasez de verde",ivcu:5.039},{x:-1.533,y:-0.770,color:"#e67e22",label:"Castilla",perfil:"Vulnerabilidad contenida",ivcu:4.931},{x:1.023,y:-2.190,color:"#27ae60",label:"Cuatro Vientos",perfil:"Renta baja y escasez de verde",ivcu:4.930},{x:-2.701,y:-0.611,color:"#e67e22",label:"Los Jerónimos",perfil:"Vulnerabilidad contenida",ivcu:4.907},{x:-0.643,y:0.093,color:"#e67e22",label:"Apóstol Santiago",perfil:"Vulnerabilidad contenida",ivcu:4.825},{x:-1.816,y:-0.069,color:"#e67e22",label:"Costillares",perfil:"Vulnerabilidad contenida",ivcu:4.823},{x:1.775,y:2.751,color:"#8e44ad",label:"Amposta",perfil:"Verde abundante (parques y zonas forestales)",ivcu:4.798},{x:-0.756,y:-1.990,color:"#27ae60",label:"Valverde",perfil:"Renta baja y escasez de verde",ivcu:4.742},{x:-1.280,y:-1.370,color:"#e67e22",label:"El Plantío",perfil:"Vulnerabilidad contenida",ivcu:4.717},{x:-2.133,y:-0.269,color:"#e67e22",label:"El Viso",perfil:"Vulnerabilidad contenida",ivcu:4.685},{x:-1.555,y:-0.488,color:"#e67e22",label:"Nueva España",perfil:"Vulnerabilidad contenida",ivcu:4.678},{x:1.445,y:-2.604,color:"#27ae60",label:"El Cañaveral",perfil:"Renta baja y escasez de verde",ivcu:4.673},{x:0.290,y:-0.906,color:"#27ae60",label:"Horcajo",perfil:"Renta baja y escasez de verde",ivcu:4.662},{x:-1.903,y:-1.402,color:"#e67e22",label:"Ciudad Universitaria",perfil:"Vulnerabilidad contenida",ivcu:4.591},{x:-1.009,y:0.005,color:"#e67e22",label:"San Juan Bautista",perfil:"Vulnerabilidad contenida",ivcu:4.579},{x:-1.455,y:-1.470,color:"#e67e22",label:"Aravaca",perfil:"Vulnerabilidad contenida",ivcu:4.468},{x:-1.217,y:-1.545,color:"#e67e22",label:"Mirasierra",perfil:"Vulnerabilidad contenida",ivcu:4.372},{x:-0.282,y:-2.366,color:"#27ae60",label:"Valdefuentes",perfil:"Renta baja y escasez de verde",ivcu:4.262},{x:-0.123,y:-1.259,color:"#27ae60",label:"Atocha",perfil:"Renta baja y escasez de verde",ivcu:4.256},{x:-1.421,y:-0.910,color:"#e67e22",label:"Piovera",perfil:"Vulnerabilidad contenida",ivcu:4.091},{x:-0.775,y:-2.474,color:"#27ae60",label:"El Goloso",perfil:"Renta baja y escasez de verde",ivcu:4.039},{x:-1.113,y:-2.212,color:"#27ae60",label:"Corralejos",perfil:"Renta baja y escasez de verde",ivcu:4.014},{x:-0.940,y:0.461,color:"#8e44ad",label:"Colina",perfil:"Verde abundante (parques y zonas forestales)",ivcu:3.703},{x:-2.268,y:0.010,color:"#e67e22",label:"Fuentelarreina",perfil:"Vulnerabilidad contenida",ivcu:3.658},{x:-1.237,y:0.195,color:"#e67e22",label:"Palomas",perfil:"Vulnerabilidad contenida",ivcu:3.505},{x:-1.723,y:-1.887,color:"#e67e22",label:"Valdemarín",perfil:"Vulnerabilidad contenida",ivcu:3.444},{x:-1.202,y:3.026,color:"#8e44ad",label:"Atalaya",perfil:"Verde abundante (parques y zonas forestales)",ivcu:1.918}];
+const LEYENDA = [{"color":"#e74c3c","label":"Alta privación económica y contaminación"},{"color":"#e67e22","label":"Vulnerabilidad contenida"},{"color":"#8e44ad","label":"Verde abundante (parques y zonas forestales)"},{"color":"#2980b9","label":"Envejecimiento y déficit de verde"},{"color":"#27ae60","label":"Renta baja y escasez de verde"}];
+const canvas  = document.getElementById('c');
+const ctx     = canvas.getContext('2d');
+const tip     = document.getElementById('tooltip');
+const W = canvas.width, H = canvas.height;
+const PAD = 40;
+
+const xs = DATA.map(d=>d.x), ys = DATA.map(d=>d.y);
+const xMin=Math.min(...xs), xMax=Math.max(...xs);
+const yMin=Math.min(...ys), yMax=Math.max(...ys);
+const xR = xMax-xMin || 1, yR = yMax-yMin || 1;
+
+function toCanvas(x, y) {
+  return [
+    PAD + (x - xMin) / xR * (W - 2*PAD),
+    H - PAD - (y - yMin) / yR * (H - 2*PAD)
+  ];
+}
+
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f9fafb'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(t=>{
+    const gx = PAD + t*(W-2*PAD);
+    const gy = PAD + t*(H-2*PAD);
+    ctx.beginPath(); ctx.moveTo(gx,PAD); ctx.lineTo(gx,H-PAD); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD,gy); ctx.lineTo(W-PAD,gy); ctx.stroke();
+  });
+  DATA.forEach(d=>{
+    const [cx,cy] = toCanvas(d.x,d.y);
+    ctx.beginPath();
+    ctx.arc(cx,cy,5,0,2*Math.PI);
+    ctx.fillStyle=d.color+'cc';
+    ctx.fill();
+    ctx.strokeStyle=d.color;
+    ctx.lineWidth=0.8;
+    ctx.stroke();
+  });
+}
+draw();
+
+const leyDiv = document.getElementById('leyenda');
+LEYENDA.forEach(l=>{
+  const el = document.createElement('div');
+  el.className='ley-item';
+  el.innerHTML=`<div class="ley-dot" style="background:${l.color}"></div>${l.label}`;
+  leyDiv.appendChild(el);
+});
+
+canvas.addEventListener('mousemove', e=>{
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  let found = null;
+  for(const d of DATA){
+    const [cx,cy] = toCanvas(d.x,d.y);
+    if(Math.hypot(cx-mx,cy-my)<8){ found=d; break; }
+  }
+  if(found){
+    tip.style.display='block';
+    tip.style.left=(mx+12)+'px'; tip.style.top=(my-8)+'px';
+    tip.innerHTML=`<b>${found.label}</b><br>${found.perfil}<br>IVCU: ${found.ivcu.toFixed(3)}`;
+  } else {
+    tip.style.display='none';
+  }
+});
+canvas.addEventListener('mouseleave',()=>tip.style.display='none');
+</script>
+</body>
+</html>
